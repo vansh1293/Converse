@@ -32,7 +32,7 @@
     "@reduxjs/toolkit": "^2.5.0",
     "@shadcn/ui": "^0.0.4",
     "@splinetool/react-spline": "^4.0.0",
-    "@tabler/icons-react": "^3.29.0",
+    "@tabler/icons-react": "^3.40.0",
     "@tailwindcss/vite": "^4.0.0",
     "@tsparticles/engine": "^3.8.0",
     "@tsparticles/react": "^3.0.0",
