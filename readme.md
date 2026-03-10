@@ -110,7 +110,8 @@ GEMINI_API_KEY=<your-gemini-api-key>
 
 ### Client `.env`
 ```env
-VITE_API_URL=http://localhost:3000
+VITE_API_URL=http://localhost:3000/api
+VITE_SOCKET_URL=http://localhost:3000
 ```
 
 ---
