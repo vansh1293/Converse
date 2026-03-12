@@ -42,7 +42,7 @@ export default function TopBarDemo() {
   const [isImagePreview, setIsImagePreview] = useState(false);
   useEffect(() => {
     if (selectedUser) {
-      const user = users.find((user) => user._id === selectedUser);
+      const user = users.find((user) => user.id === selectedUser);
       if (user) {
         dispatch(setSelectedUserData(user));
         dispatch(getMessages(user));

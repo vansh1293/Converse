@@ -38,8 +38,8 @@ export const getUsers = createAsyncThunk('message/users', async (_, { rejectWith
 
 export const getMessages = createAsyncThunk('message/messages', async (data, { rejectWithValue }) => {
     try {
-        const res = await axiosInstance.get(`/message/${data._id}`);
-        console.log("getMessages: runned for ", data._id);
+        const res = await axiosInstance.get(`/message/${data.id}`);
+        console.log("getMessages: runned for ", data.id);
         return { messages: res.data };
     } catch (err) {
         console.log("error in getMessages: ", err);
@@ -75,7 +75,7 @@ export const getAiResponse = createAsyncThunk('message/getAiResponse', async (da
         return { aiResponse: res.data };
     } catch (err) {
         console.log("error in getAiResponse: ", err);
-        Toast.Error("Error in AI response");
+        //toast("Error in AI response");
         return rejectWithValue(err);
     }
 });
@@ -89,16 +89,16 @@ export const deleteMessage = createAsyncThunk('message/delete-message', async ({
         if (!selectedUser) {
             throw new Error("No user selected");
         }
-        if (data.senderID !== authUser._id) {
+        if (data.senderID !== authUser.id) {
             throw new Error("You are not authorized to delete this message");
         }
         await axiosInstance.delete(`/message/delete-message`, {
-            data: { _id: data._id }
+            data: { id: data.id }
         });
         toast({
             description: "Your message has been deleted.",
         });
-        return { messages: messages.filter(message => message._id !== data._id) };
+        return { messages: messages.filter(message => message.id !== data.id) };
     } catch (err) {
         toast({
             variant: "destructive",
@@ -128,7 +128,7 @@ export const subscribeToMessages = () => (dispatch, getState) => {
     });
     auth.socket.on('messageDeleted', (data) => {
         const currentMessages = getState().chat.messages;
-        dispatch(setMessages(currentMessages.filter(message => message._id !== data._id)));
+        dispatch(setMessages(currentMessages.filter(message => message.id !== data.id)));
     });
 };
 

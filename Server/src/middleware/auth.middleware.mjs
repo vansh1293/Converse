@@ -20,13 +20,14 @@ export const protect = async (req, res, next) => {
         id: true,
         email: true,
         fullName: true,
+        profileImage: true,
       },
     });
     if (!user) {
       return res.status(404).json({ message: "Unauthorized: User not found" });
     }
     req.user = user;
-    console.log("Authenticated user: ", req.user);
+
     next();
   } catch (error) {
     console.log("Error in protect middleware: ", error);

@@ -24,7 +24,7 @@ export const generateCall = createAsyncThunk(
       const  authUser = getState().auth.authUser;
       
       const senderData = {
-        id: authUser._id,
+        id: authUser.id,
         fullName: authUser.fullName,
         profileImage: authUser.profileImage,
       };

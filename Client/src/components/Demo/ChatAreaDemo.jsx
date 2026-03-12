@@ -24,6 +24,7 @@ export default function ChatAreaDemo() {
   const { authUser } = useSelector((state) => state.auth);
   const messagesEndRef = useRef(null);
   const { toast } = useToast();
+ 
 
   // Scroll to the last message when messages update.
   useEffect(() => {
@@ -64,7 +65,7 @@ export default function ChatAreaDemo() {
 
     return messages.map((message, index) => {
       const formattedDate = formatDate(message.createdAt);
-      if (message.senderID === selectedUserData._id) {
+      if (message.senderID === selectedUserData.id) {
         // Message from the selected user (incoming)
         return (
           <div key={index} ref={messagesEndRef}>
@@ -80,7 +81,7 @@ export default function ChatAreaDemo() {
                 <div className="flex flex-col">
                   <div
                     className={`p-2 px-4 rounded-xl ${
-                      message.sender === selectedUserData._id
+                      message.sender === selectedUserData.id
                         ? "bg-white/10 text-white"
                         : "bg-white/10"
                     } h-fit-content max-w-80 text-sm`}
@@ -110,7 +111,7 @@ export default function ChatAreaDemo() {
                     <div className="flex flex-col">
                       <div
                         className={`p-2 px-4 rounded-xl ${
-                          message.sender === selectedUserData._id
+                          message.sender === selectedUserData.id
                             ? "bg-white/10 text-white"
                             : "bg-white/10"
                         } h-fit-content max-w-80 text-sm`}

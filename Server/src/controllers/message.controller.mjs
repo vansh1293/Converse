@@ -9,7 +9,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const getUsersForSideBar = async (req, res) => {
     try {
-        const loggedUserId = req.user._id;
+        const loggedUserId = req.user.id;
         const users = await prisma.user.findMany({
             where: {
                 id: {
@@ -33,10 +33,10 @@ export const getUsersForSideBar = async (req, res) => {
 export const getMessages = async (req, res) => {
     try {
         const { id: userToChatWithId } = req.params;
-        const loogedUserId = req.user._id;
+        const loogedUserId = req.user.id;
         const messages = await prisma.message.findMany({
             where: {
-                $or: [
+                OR: [
                     { senderID: loogedUserId, receiverID: userToChatWithId },
                     { senderID: userToChatWithId, receiverID: loogedUserId }
                 ]
@@ -55,7 +55,7 @@ export const sendMessage = async (req, res) => {
         // console.log("Request File:", req.file);
         const { text, audio } = req.body;
         const { id: receiverID } = req.params;
-        const senderID = req.user._id;
+        const senderID = req.user.id;
         if (!receiverID) {
             return res.status(400).json({ message: "Receiver ID is required" });
         }
@@ -140,8 +140,8 @@ export const getAiResponse = async (req, res) => {
 
 export const deleteMessage = async (req, res) => {
     try {
-        const { _id } = req.body;
-        const message = await prisma.message.findUnique({ where: { id: _id } });
+        const { id } = req.body;
+        const message = await prisma.message.findUnique({ where: { id: id } });
 
         if (!message) {
             return res.status(404).json({ message: "Message not found" });
@@ -154,10 +154,10 @@ export const deleteMessage = async (req, res) => {
             const public_id = message.audio.split("/").pop().split(".")[0];
             await cloudinary.uploader.destroy(`chat-audio/${public_id}`);
         }
-        await prisma.message.delete({ where: { id: _id } });
+        await prisma.message.delete({ where: { id: id } });
         const receiverSocketID = getReceiverSocketID(message.receiverID);
         if (receiverSocketID) {
-            io.to(receiverSocketID).emit('messageDeleted', { _id });
+            io.to(receiverSocketID).emit('messageDeleted', { id });
         }
         res.status(200).json({ message: "Message deleted successfully" });
     } catch (error) {
@@ -171,7 +171,7 @@ export const generateCall = (req, res) => {
         const { id, offer, senderData } = req.body;
         const receiverSocketID = getReceiverSocketID(id);
         if (receiverSocketID) {
-            io.to(receiverSocketID).emit('incomingCall', { senderID: req.user._id, senderData: senderData, offer });
+            io.to(receiverSocketID).emit('incomingCall', { senderID: req.user.  id, senderData: senderData, offer });
         }
         res.status(200).json({
             message: "Call initiated",
@@ -188,7 +188,7 @@ export const acceptCall = (req, res) => {
         const { id, answer } = req.body;
         const receiverSocketID = getReceiverSocketID(id);
         if (receiverSocketID) {
-            io.to(receiverSocketID).emit('callAccepted', { senderID: req.user._id, answer });
+            io.to(receiverSocketID).emit('callAccepted', { senderID: req.user.id, answer });
         }
         res.status(200).json({ message: "Call accepted" });
     } catch (error) {
@@ -203,7 +203,7 @@ export const rejectCall = (req, res) => {
         const { id } = req.body;
         const receiverSocketID = getReceiverSocketID(id);
         if (receiverSocketID) {
-            io.to(receiverSocketID).emit('callRejected', { senderID: req.user._id });
+            io.to(receiverSocketID).emit('callRejected', { senderID: req.user.id });
         }
         res.status(200).json({ message: "Call rejected" });
     } catch (error) {
@@ -217,7 +217,7 @@ export const endCall = (req, res) => {
         const { id } = req.body;
         const receiverSocketID = getReceiverSocketID(id);
         if (receiverSocketID) {
-            io.to(receiverSocketID).emit('callEnded', { senderID: req.user._id });
+            io.to(receiverSocketID).emit('callEnded', { senderID: req.user.id });
         }
         res.status(200).json({ message: "Call ended" });
     } catch (error) {

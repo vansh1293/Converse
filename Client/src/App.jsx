@@ -1,7 +1,8 @@
 import { Routes, Route, Navigate,useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { checkAuth, connectSocket } from "./redux/slice/authSlice";
+import { checkAuth, connectSocket, setEncryption } from "./redux/slice/authSlice";
+import { createDB } from "./lib/crypto";
 import { ProgressDemo } from "./components/Demo/ProgressDemo";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -20,13 +21,27 @@ export default function App() {
   const dispatch = useDispatch();
   const { authUser, isCheckingUser,onlineUsers } = useSelector((state) => state.auth);
 
+  // Initialize IndexedDB once
   useEffect(() => {
-    if(!isCheckingUser)
-    dispatch(checkAuth(navigate));  
-  setTimeout(() => {
-    dispatch(connectSocket(navigate));
-  }, 3000);
+    createDB();
+  }, []);
+
+  // Check authentication when app starts
+  useEffect(() => {
+    dispatch(checkAuth(navigate));
   }, [dispatch]);
+
+  // After authUser is available → setup encryption → connect socket
+  useEffect(() => {
+    if (!authUser) return;
+
+    const initSecurity = async () => {
+      await dispatch(setEncryption(authUser.id));
+      dispatch(connectSocket(navigate));
+    };
+
+    initSecurity();
+  }, [authUser, dispatch]);
 
 
 
