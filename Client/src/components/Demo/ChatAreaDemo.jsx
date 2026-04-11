@@ -3,28 +3,29 @@ import { useSelector, useDispatch } from "react-redux";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "../ui/scroll-area";
 import defaultUserImage from "../../assets/defaultUserImage.jpeg";
-import { 
-  getMessages, 
-  subscribeToMessages, 
-  unsubscribeToMessages, 
-  deleteMessage 
+import {
+  getMessages,
+  subscribeToMessages,
+  unsubscribeToMessages,
+  deleteMessage,
+  getPublicKeys,
 } from "@/redux/slice/chatSlice";
 import BlurText from "../ui/TextAnimations/BlurText/BlurText";
-import { 
-  ContextMenu, 
-  ContextMenuContent, 
-  ContextMenuItem, 
-  ContextMenuTrigger 
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ChatAreaDemo() {
   const dispatch = useDispatch();
   const { messages, selectedUserData } = useSelector((state) => state.chat);
-  const { authUser } = useSelector((state) => state.auth);
+  const { authUser, deviceID } = useSelector((state) => state.auth);
+
   const messagesEndRef = useRef(null);
   const { toast } = useToast();
- 
 
   // Scroll to the last message when messages update.
   useEffect(() => {
@@ -36,17 +37,31 @@ export default function ChatAreaDemo() {
   // Subscribe to messages when selectedUserData is available, and clean up on unmount.
   useEffect(() => {
     if (!selectedUserData) return;
-    dispatch(getMessages(selectedUserData));
-    dispatch(subscribeToMessages());
+
+    async function initChat() {
+      // Fetch public keys for encryption before fetching messages to ensure decryption can happen on the client side.
+      await dispatch(getPublicKeys(selectedUserData.id));
+
+      // Dispatch getMessages with an object containing the id, as expected by the thunk
+      dispatch(getMessages({ id: selectedUserData.id }));
+
+      dispatch(subscribeToMessages());
+    }
+
+    initChat();
+
     return () => {
       dispatch(unsubscribeToMessages());
     };
   }, [dispatch, selectedUserData]);
 
   // Memoized handler to delete a message.
-  const handleDeleteMessage = useCallback((message) => {
-    dispatch(deleteMessage({ data: message, toast }));
-  }, [dispatch, toast]);
+  const handleDeleteMessage = useCallback(
+    (message) => {
+      dispatch(deleteMessage({ data: message, toast }));
+    },
+    [dispatch, toast],
+  );
 
   // Helper to format the message date.
   const formatDate = useCallback((dateStr) => {
@@ -65,7 +80,7 @@ export default function ChatAreaDemo() {
 
     return messages.map((message, index) => {
       const formattedDate = formatDate(message.createdAt);
-      if (message.senderID === selectedUserData.id) {
+      if (message.receiverDeviceId === deviceID) {
         // Message from the selected user (incoming)
         return (
           <div key={index} ref={messagesEndRef}>
@@ -79,15 +94,13 @@ export default function ChatAreaDemo() {
                   <AvatarFallback>{selectedUserData.name}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                  <div
-                    className={`p-2 px-4 rounded-xl ${
-                      message.sender === selectedUserData.id
-                        ? "bg-white/10 text-white"
-                        : "bg-white/10"
-                    } h-fit-content max-w-80 text-sm`}
-                  >
+                  <div className="p-2 px-4 rounded-xl bg-white/10 text-white h-fit-content max-w-80 text-sm">
                     {message.text === "" ? (
-                      <img src={message.image} className="my-2 rounded-md" alt="message" />
+                      <img
+                        src={message.image}
+                        className="my-2 rounded-md"
+                        alt="message"
+                      />
                     ) : (
                       message.text
                     )}
@@ -109,15 +122,13 @@ export default function ChatAreaDemo() {
                 <ContextMenu>
                   <ContextMenuTrigger>
                     <div className="flex flex-col">
-                      <div
-                        className={`p-2 px-4 rounded-xl ${
-                          message.sender === selectedUserData.id
-                            ? "bg-white/10 text-white"
-                            : "bg-white/10"
-                        } h-fit-content max-w-80 text-sm`}
-                      >
+                      <div className="p-2 px-4 rounded-xl bg-white/10 h-fit-content max-w-80 text-sm">
                         {message.text === "" ? (
-                          <img src={message.image} className="my-2 rounded-md" alt="message" />
+                          <img
+                            src={message.image}
+                            className="my-2 rounded-md"
+                            alt="message"
+                          />
                         ) : (
                           message.text
                         )}
@@ -128,7 +139,9 @@ export default function ChatAreaDemo() {
                     </div>
                   </ContextMenuTrigger>
                   <ContextMenuContent>
-                    <ContextMenuItem onClick={() => handleDeleteMessage(message)}>
+                    <ContextMenuItem
+                      onClick={() => handleDeleteMessage(message)}
+                    >
                       Delete this message
                     </ContextMenuItem>
                   </ContextMenuContent>

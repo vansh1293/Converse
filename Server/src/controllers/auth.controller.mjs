@@ -10,8 +10,10 @@ const validateEmail = (email) => {
     /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
   return re.test(String(email).toLowerCase());
 };
-const generateOTP = () =>
-  Math.floor(100000 + Math.random() * 900000).toString();
+
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
 
 export const signup = async (req, res) => {
   const { email, fullName, password } = req.body;
@@ -63,6 +65,7 @@ export const signup = async (req, res) => {
       });
 
       await sendOTPEmail(email, otp);
+      await console.log("OTP for email verification:", otp); // For testing purposes, log the OTP to the console
 
       return res.status(201).json({
         message: "OTP sent to your email.",
@@ -248,38 +251,41 @@ export const checkAuth = (req, res) => {
 
 export const storePublicKey = async (req, res) => {
   try {
-    const { publicKey,device } = req.body;
+    const { publicKey, device } = req.body;
+    console.log("Received public key:", publicKey, "for device:", device);
     const userId = req.user.id;
-    if (!publicKey || !device) {
-      return res.status(400).json({ message: "Public key and device are required" });
+    if (!publicKey || !device || !userId) {
+      return res
+        .status(400)
+        .json({ message: "Public key, device, and user ID are required" });
     }
     const result = await prisma.device.create({
       data: {
         userId,
         publicKey,
-        device
+        device,
       },
     });
-    res.status(200).json({ deviceID: result.id, message: "Public key stored successfully" });
+    res
+      .status(200)
+      .json({ deviceID: result.id, message: "Public key stored successfully" });
   } catch (error) {
     console.log("Error in storePublicKey controller: ", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-// export const getPublicKey = async (req, res) => {
-//   try {    const { deviceID } = req.params;
-//     if (!deviceID) {
-//       return res.status(400).json({ message: "Device ID is required" });
-//     }
-//     const device = await prisma.device.findUnique({
-//       where: { id: deviceID },
-//       select: { publicKey: true },
-//     });
-//     if (!device) {
-//       return res.status(404).json({ message: "Device not found" });
-//     }
-//     res.status(200).json({ publicKey: device.publicKey });
-//   } catch (error) {
-//     console.log("Error in getPublicKey controller: ", error);
-//     res.status(500).json({ message: "Internal Server Error" });   
-// }
+export const getPublicKey = async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+    const devices = await prisma.device.findMany({
+      where: { userId },
+    });
+    res.status(200).json({ devices });
+  } catch (error) {
+    console.log("Error in getPublicKey controller: ", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};

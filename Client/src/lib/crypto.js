@@ -6,7 +6,7 @@ export function generateKeyPair() {
 
   return {
     publicKey: util.encodeBase64(keyPair.publicKey),
-    privateKey: util.encodeBase64(keyPair.secretKey)
+    privateKey: util.encodeBase64(keyPair.secretKey),
   };
 }
 
@@ -17,52 +17,69 @@ export function encryptMessage(message, receiverPublicKey, senderPrivateKey) {
     util.decodeUTF8(message),
     nonce,
     util.decodeBase64(receiverPublicKey),
-    util.decodeBase64(senderPrivateKey)
-  );
+    util.decodeBase64(senderPrivateKey),
+  );  
 
   return {
     ciphertext: util.encodeBase64(encrypted),
-    nonce: util.encodeBase64(nonce)
+    nonce: util.encodeBase64(nonce),
   };
 }
 
-export function decryptMessage(ciphertext, nonce, senderPublicKey, myPrivateKey) {
+export function decryptMessage(
+  ciphertext,
+  nonce,
+  senderPublicKey,
+  myPrivateKey,
+) {
   const decrypted = nacl.box.open(
     util.decodeBase64(ciphertext),
     util.decodeBase64(nonce),
     util.decodeBase64(senderPublicKey),
-    util.decodeBase64(myPrivateKey)
+    util.decodeBase64(myPrivateKey),
   );
 
   return util.encodeUTF8(decrypted);
 }
 
 export const createDB = () => {
-  const request = window.indexedDB.open("Converse", 1);
-  request.onerror = (event) => {
-    console.error("IndexedDB error:", event.target.error);
-  };
-  request.onupgradeneeded = (event) => {
-    const db = event.target.result;
-    if (!db.objectStoreNames.contains("keys")) {
-      const objectStore = db.createObjectStore("keys", { keyPath: "id" });
-      db.createObjectStore("keys", { keyPath: "id" });
-      objectStore.transaction.oncomplete = (event) => {
-        return { success: true, message: "IndexedDB setup complete" };
-      };
-    }
-  };
+  return new Promise((resolve, reject) => {
+    const request = window.indexedDB.open("Converse", 3);
+    request.onerror = (event) => {
+      console.error("IndexedDB error:", event.target.error);
+      reject(event.target.error);
+    };
+    request.onsuccess = () => {
+      resolve({ success: true, message: "IndexedDB setup complete" });
+    };
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains("keys")) {
+        db.createObjectStore("keys", { keyPath: "id" });
+      }
+    };
+  });
 };
 
 export const writeKeysToDB = (id, privateKey, publicKey, deviceID) => {
   return new Promise((resolve, reject) => {
-
-    const request = indexedDB.open("Converse", 1);
+    const request = window.indexedDB.open("Converse", 3);
 
     request.onerror = () => reject("DB open failed");
 
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains("keys")) {
+        db.createObjectStore("keys", { keyPath: "id" });
+      }
+    };
+
     request.onsuccess = (event) => {
       const db = event.target.result;
+      if (!db.objectStoreNames.contains("keys")) {
+        // Just in case it's still missing, though onupgradeneeded should catch it
+        return reject("Store 'keys' missing");
+      }
 
       const tx = db.transaction("keys", "readwrite");
       const store = tx.objectStore("keys");
@@ -73,15 +90,26 @@ export const writeKeysToDB = (id, privateKey, publicKey, deviceID) => {
 
       addRequest.onerror = () => reject({ success: false });
     };
-
   });
 };
+
 export const getKeysFromDB = (id) => {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("Converse", 1);
+    const request = window.indexedDB.open("Converse", 3);
     request.onerror = () => reject("DB open failed");
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains("keys")) {
+        db.createObjectStore("keys", { keyPath: "id" });
+      }
+    };
+
     request.onsuccess = (event) => {
       const db = event.target.result;
+      if (!db.objectStoreNames.contains("keys")) {
+        return resolve(null); // the store doesn't exist so there are no keys
+      }
       const tx = db.transaction("keys", "readonly");
       const store = tx.objectStore("keys");
       const getReq = store.get(id);
@@ -90,4 +118,3 @@ export const getKeysFromDB = (id) => {
     };
   });
 };
-

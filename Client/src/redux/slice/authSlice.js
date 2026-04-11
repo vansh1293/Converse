@@ -12,8 +12,6 @@ import {
   setCallerID,
   setAnswerOffer,
 } from "./callSlice";
-import { create } from "domain";
-import { get } from "http";
 import {
   createDB,
   writeKeysToDB,
@@ -39,10 +37,10 @@ const initialState = {
 
 export const checkAuth = createAsyncThunk(
   "auth/checkAuth",
-  async (navigate, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
       const res = await axiosInstance.get("/auth/check");
-      navigate("/");
+
       return { authUser: res.data };
     } catch (err) {
       console.error("Error in checkAuth:", err?.response?.data || err.message);
@@ -109,7 +107,6 @@ export const setEncryption = createAsyncThunk(
   "auth/setEncryption",
   async (id, { rejectWithValue }) => {
     try {
-      
       // 1. Check if keys already exist
       const storedKeys = await getKeysFromDB(id);
 
@@ -147,11 +144,12 @@ export const setEncryption = createAsyncThunk(
 
       return rejectWithValue({
         message: "Failed to set up encryption",
-        error: err,
+        error: err?.response?.data || err.message,
       });
     }
   },
 );
+
 
 export const verifyOTP = createAsyncThunk(
   "auth/verifyOTP",
@@ -236,7 +234,7 @@ export const connectSocket = (navigate) => (dispatch, getState) => {
     const socket = io(import.meta.env.VITE_SOCKET_URL, {
       query: {
         userID: auth.authUser.id,
-      },//have to change userid to deviceid for better security
+      }, //have to change userid to deviceid for better security
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,

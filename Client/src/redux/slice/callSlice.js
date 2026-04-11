@@ -2,7 +2,6 @@ import { createSlice } from "@reduxjs/toolkit";
 import { axiosInstance } from "../../lib/axios";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
-
 const initialState = {
   answerOffer: null,
   callerID: null,
@@ -14,21 +13,22 @@ const initialState = {
   callEnded: false,
   incomingOffer: null,
   error: null,
+  isCallOn: false,
+  receiverSocketID: "",
 };
 
 export const generateCall = createAsyncThunk(
   "call/generateCall",
-  async ({ toast, offer, id}, { rejectWithValue, getState }) => {
-    
+  async ({ toast, offer, id }, { rejectWithValue, getState }) => {
     try {
-      const  authUser = getState().auth.authUser;
-      
+      const authUser = getState().auth.authUser;
+
       const senderData = {
         id: authUser.id,
         fullName: authUser.fullName,
         profileImage: authUser.profileImage,
       };
-      
+
       console.log("id for generateCall: ", id);
       const res = await axiosInstance.post("/message/generateCall", {
         id: id,
@@ -36,7 +36,10 @@ export const generateCall = createAsyncThunk(
         senderData: senderData,
       });
       console.log("callUser: ", res.data);
-      return { receiverID: res.data.receiverID };
+      return {
+        receiverID: res.data.receiverID,
+        receiverSocketID: res.data.receiverSocketID,
+      };
     } catch (err) {
       console.log("error in call: ", err);
       toast({
@@ -46,12 +49,12 @@ export const generateCall = createAsyncThunk(
       });
       return rejectWithValue(err);
     }
-  }
+  },
 );
 
 export const acceptCall = createAsyncThunk(
   "call/acceptCall",
-  async ({ toast, answer,id }, { rejectWithValue, getState }) => {
+  async ({ toast, answer, id }, { rejectWithValue, getState }) => {
     try {
       const { chat } = getState();
       const res = await axiosInstance.post("/message/acceptCall", {
@@ -69,12 +72,12 @@ export const acceptCall = createAsyncThunk(
       });
       return rejectWithValue(err);
     }
-  }
+  },
 );
 
 export const rejectCall = createAsyncThunk(
   "call/rejectCall",
-  async ({ toast,navigate, id }, { rejectWithValue, getState }) => {
+  async ({ toast, navigate, id }, { rejectWithValue, getState }) => {
     try {
       await axiosInstance.post("/message/rejectCall", {
         id: id,
@@ -90,7 +93,7 @@ export const rejectCall = createAsyncThunk(
       });
       return rejectWithValue(err);
     }
-  }
+  },
 );
 
 export const endCall = createAsyncThunk(
@@ -111,9 +114,8 @@ export const endCall = createAsyncThunk(
       console.log("error in endCall: ", err);
       return rejectWithValue(err);
     }
-  }
+  },
 );
-
 
 export const callSlice = createSlice({
   name: "call",
@@ -143,12 +145,17 @@ export const callSlice = createSlice({
     },
     setAnswerOffer: (state, action) => {
       state.answerOffer = action.payload;
-    }
+    },
+    setIsCallOn: (state, action) => {
+      state.isCallOn = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
       .addCase(generateCall.fulfilled, (state, action) => {
         state.callerID = action.payload.receiverID;
+        state.isCallOn = true;
+        state.receiverSocketID = action.payload.receiverSocketID;
       })
       .addCase(generateCall.rejected, (state, action) => {
         state.error = action.payload;
@@ -173,6 +180,8 @@ export const callSlice = createSlice({
         state.callAccepted = false;
         state.callRejected = false;
         state.callEnded = true;
+        state.isCallOn = false;
+        state.receiverSocketID = null;
       })
       .addCase(endCall.rejected, (state, action) => {
         state.error = action.payload;
@@ -188,6 +197,7 @@ export const {
   setCallAccepted,
   setCallRejected,
   setCallerID,
-  setAnswerOffer
+  setAnswerOffer,
+  setIsCallOn,
 } = callSlice.actions;
 export default callSlice.reducer;

@@ -27,20 +27,20 @@ export default function App() {
   }, []);
 
   // Check authentication when app starts
-  useEffect(() => {
+  useEffect((navigate) => {
     dispatch(checkAuth(navigate));
   }, [dispatch]);
 
   // After authUser is available → setup encryption → connect socket
-  useEffect(() => {
+  useEffect((navigate) => {
     if (!authUser) return;
 
-    const initSecurity = async () => {
+    const initSecurity = async (authUser,navigate) => {
       await dispatch(setEncryption(authUser.id));
       dispatch(connectSocket(navigate));
     };
 
-    initSecurity();
+    initSecurity(authUser,navigate);
   }, [authUser, dispatch]);
 
 
@@ -61,7 +61,7 @@ export default function App() {
           background="#000000"
           minSize={0.1}
           maxSize={0.7}
-          particleDensity={70}
+          particleDensity={80}
           className="w-full h-full"
           particleColor="#FFFFFF"
         />
@@ -72,7 +72,7 @@ export default function App() {
         colorStops={["#00d8ff", "#7cff67", "#00d8ff"]}
         blend={1}
         amplitude={2}
-        speed={0.3}
+        speed={0.5}
       />
                 
       </div>

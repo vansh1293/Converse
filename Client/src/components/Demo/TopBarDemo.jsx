@@ -9,6 +9,7 @@ import {
   setSelectedUserData,
   setSelectedUser,
   getMessages,
+    getPublicKeys
 } from "@/redux/slice/chatSlice";
 import {
   Tooltip,
@@ -45,7 +46,9 @@ export default function TopBarDemo() {
       const user = users.find((user) => user.id === selectedUser);
       if (user) {
         dispatch(setSelectedUserData(user));
-        dispatch(getMessages(user));
+        // dispatch(getPublicKeys(user.id));
+        // dispatch(getMessages(user.id));
+        
       }
     }
   }, [selectedUser, dispatch]);
