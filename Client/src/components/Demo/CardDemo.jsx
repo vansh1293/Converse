@@ -56,14 +56,11 @@ export const CardDemo = ({ className, ...props }) => {
     [dispatch]
   );
 
-  const filteredUsers = useMemo(() => {
-    return users.filter(
-      (user) =>
-        (!viewOnlineUsers || onlineUsers.includes(user._id)) &&
-        user.fullName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [users, viewOnlineUsers, searchTerm, onlineUsers]);
-
+  const filteredUsers = (Array.isArray(users) ? users : []).filter(
+    (user) =>
+      (!viewOnlineUsers || onlineUsers.includes(user.id)) &&
+      user.fullName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   return (
     <Card className={cn("md:w-[380px] w-screen", className)} {...props}>
       <div className="sticky top-0 z-10 bg-black">
@@ -110,12 +107,12 @@ export const CardDemo = ({ className, ...props }) => {
             </div>
           ) : (
             filteredUsers.map((user) => (
-              <ContextMenuDemo key={user._id}>
+              <ContextMenuDemo key={user.id}>
                 <button
-                  onClick={() => handleSelectUser(user._id)}
+                  onClick={() => handleSelectUser(user.id)}
                   className={cn(
                     "flex items-center border border-collapse space-x-4 py-3 px-4 w-full hover:bg-base-300 transition-colors",
-                    selectedUser === user._id ? "bg-white/10" : "bg-black"
+                    selectedUser === user.id ? "bg-white/10" : "bg-black"
                   )}
                 >
                   <Avatar>
@@ -127,7 +124,7 @@ export const CardDemo = ({ className, ...props }) => {
                   </Avatar>
                   <div className="flex flex-col items-start flex-1">
                     <span>{user.fullName}</span>
-                    {onlineUsers.includes(user._id) ? (
+                    {onlineUsers.includes(user.id) ? (
                       <span className="text-xs text-green-400">Online</span>
                     ) : (
                       <span className="text-xs text-muted-foreground">

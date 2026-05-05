@@ -1,0 +1,14 @@
+{
+  "name": "converse",
+  "version": "1.0.0",
+  "description": "Welcome to the Full Stack Realtime Chat App! This application offers seamless real-time communication with a modern and responsive design.",
+  "main": "index.js",
+  "scripts": {
+    "build":"npm install --prefix Client && npm run build --prefix Client && npm install --prefix Server ",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start" : "npm run start --prefix Server"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

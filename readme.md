@@ -1,120 +1,211 @@
-# 🌐 Full Stack Realtime Chat App
 
-Welcome to the Full Stack Realtime Chat App! This application offers seamless real-time communication with a modern and responsive design.
 
-![App Demo](link-to-demo-image-or-gif)
+# Converse - Full Stack Realtime Chat Application
 
-## 🚀 Features
+## Overview
 
-- **Real-Time Messaging**: Experience instant communication powered by Socket.io.
-- **User Authentication**: Secure login and registration using JWT.
-- **Online Status**: View active users in real-time.
-- **Responsive Design**: Optimized for all devices with TailwindCSS and Daisy UI.
-- **Global State Management**: Efficient state handling with Zustand.
-- **Error Handling**: Robust client and server-side error management.
-- **Typing Indicators**: See when other users are typing in real time.
-- **Media Sharing**: Share images and files directly in the chat.
-- **Message History**: Persistent message storage for chat history.
-- **Dark Mode**: User-friendly dark mode for better accessibility.
+Converse is a full-stack real-time chat application that provides seamless communication with a modern and responsive design. It supports features like user authentication, real-time messaging, AI-powered responses, and video/audio calling.
 
-## 🛠️ Tech Stack
+---
 
-- **Frontend**: React, TailwindCSS, Daisy UI
-- **Backend**: Node.js, Express
-- **Database**: MongoDB
-- **Real-Time Communication**: Socket.io
-- **State Management**: Zustand
-- **Cloud Storage**: Cloudinary for media storage
+## Features
 
-## 📸 Screenshots
+### Client-Side Features
+1. **User Authentication**:
+   - Login and Signup with email and password.
+   - Email verification using OTP.
 
-![Login Screen](link-to-login-screen-image)
-*Login Screen*
+2. **Real-Time Messaging**:
+   - Send and receive text messages.
+   - Support for multimedia (images, audio).
 
-![Chat Interface](link-to-chat-interface-image)
-*Chat Interface*
+3. **AI-Powered Responses**:
+   - Integration with AI to generate responses.
 
-![Dark Mode](link-to-dark-mode-image)
-*Dark Mode*
+4. **Video/Audio Calling**:
+   - Initiate and receive video/audio calls.
+   - Call management (accept, reject, end).
 
-## 🏗️ Installation
+5. **User Profile Management**:
+   - Update profile details (name, about, profile picture).
 
-1. **Clone the Repository**:
+6. **Responsive Design**:
+   - Optimized for both desktop and mobile devices.
+
+7. **Dark Mode**:
+   - Toggle between light and dark themes.
+
+---
+
+### Server-Side Features
+1. **Authentication**:
+   - JWT-based authentication.
+   - Secure password hashing with bcrypt.
+
+2. **Database**:
+   - MongoDB for storing user and message data.
+
+3. **File Uploads**:
+   - Cloudinary integration for storing images and audio files.
+
+4. **WebSocket Communication**:
+   - Real-time communication using `socket.io`.
+
+5. **RESTful APIs**:
+   - Endpoints for user authentication, messaging, and calling.
+
+6. **Environment Configuration**:
+   - Secure environment variables for sensitive data.
+
+---
+
+## Installation
+
+### Prerequisites
+- Node.js (v16 or higher)
+- MongoDB
+- Cloudinary account
+- Email service credentials (e.g., Gmail)
+
+### Steps
+1. Clone the repository:
    ```bash
-   git clone https://github.com/burakorkmez/fullstack-chat-app.git
-   cd fullstack-chat-app
+   git clone https://github.com/your-repo/converse.git
+   cd converse
    ```
 
-2. **Install Dependencies**:
+2. Install dependencies:
    ```bash
-   npm install
+   npm install --prefix Client
+   npm install --prefix Server
    ```
 
-3. **Configure Environment Variables**:
-   Create a `.env` file in the root directory and add the following:
-   ```env
-   MONGODB_URI=your_mongodb_uri
-   PORT=5001
-   JWT_SECRET=your_jwt_secret
-   CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-   CLOUDINARY_API_KEY=your_cloudinary_api_key
-   CLOUDINARY_API_SECRET=your_cloudinary_api_secret
-   NODE_ENV=development
-   ```
-
-4. **Build the Application**:
+3. Build the client:
    ```bash
-   npm run build
+   npm run build --prefix Client
    ```
 
-5. **Start the Application**:
-   ```bash
-   npm start
-   ```
+4. Set up environment variables:
+   - Create `.env` files in both `Client` and `Server` directories.
+   - Add the following variables:
 
-## 🧪 Testing
+---
 
-To run tests, use the following command:
-```bash
-npm test
+## Environment Variables
+
+### Server `.env`
+```env
+MONGODB_URI=<your-mongodb-uri>
+PORT=3000
+JWT_SECRET=<your-jwt-secret>
+NODE_ENV=production
+CLOUDINARY_CLOUD_NAME=<your-cloudinary-cloud-name>
+CLOUDINARY_API_KEY=<your-cloudinary-api-key>
+CLOUDINARY_API_SECRET=<your-cloudinary-api-secret>
+CLIENT_KEY=http://localhost:5173
+EMAIL_USER=<your-email-address>
+EMAIL_PASS=<your-email-password>
+GEMINI_API_KEY=<your-gemini-api-key>
 ```
 
-## 🚀 Deployment
+### Client `.env`
+```env
+VITE_API_URL=http://localhost:3000
+```
 
-This app is ready for deployment to cloud platforms like Heroku, Vercel, or AWS. Follow these steps:
+---
 
-1. **Prepare for Production**:
+## Running the Application
+
+1. Start the server:
    ```bash
-   npm run build
+   npm run start --prefix Server
    ```
-2. **Set Environment Variables** on your cloud provider.
-3. **Deploy** the app using your preferred method.
 
-For detailed instructions, refer to the [Deployment Guide](link-to-deployment-guide).
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. **Fork the Repository**
-2. **Create a New Branch**:
+2. Start the client (for development):
    ```bash
-   git checkout -b feature/YourFeatureName
+   npm run dev --prefix Client
    ```
-3. **Commit Your Changes**:
+
+3. Access the application:
+   - Open your browser and navigate to `http://localhost:5173`.
+
+---
+
+## Folder Structure
+
+### Client
+- **`src/`**: Contains React components, hooks, pages, and assets.
+- **`public/`**: Static assets like icons and images.
+- **`tailwind.config.js`**: Tailwind CSS configuration.
+- **`vite.config.js`**: Vite configuration for the client.
+
+### Server
+- **`src/`**: Contains controllers, routes, middleware, and utility functions.
+- **`models/`**: Mongoose models for MongoDB.
+- **`lib/`**: Utility libraries (e.g., Cloudinary, Socket.io).
+- **`routes/`**: API route definitions.
+
+---
+
+## API Endpoints
+
+### Authentication
+- `POST /auth/signup`: Register a new user.
+- `POST /auth/login`: Login a user.
+- `POST /auth/logout`: Logout a user.
+
+### Messaging
+- `GET /message/users`: Fetch users for the sidebar.
+- `GET /message/:id`: Fetch messages with a specific user.
+- `POST /message/send-message/:id`: Send a message.
+- `DELETE /message/delete-message`: Delete a message.
+
+### Calling
+- `POST /message/generateCall`: Initiate a call.
+- `POST /message/acceptCall`: Accept a call.
+- `POST /message/rejectCall`: Reject a call.
+- `POST /message/endCall`: End a call.
+
+---
+
+## Technologies Used
+
+### Frontend
+- React.js
+- Tailwind CSS
+- Vite
+- Redux Toolkit
+- Simple-Peer (WebRTC)
+
+### Backend
+- Node.js
+- Express.js
+- MongoDB
+- Socket.io
+- Cloudinary
+
+---
+
+## Contributing
+
+1. Fork the repository.
+2. Create a new branch:
    ```bash
-   git commit -m 'Add some feature'
+   git checkout -b feature-name
    ```
-4. **Push to the Branch**:
+3. Commit your changes:
    ```bash
-   git push origin feature/YourFeatureName
+   git commit -m "Add feature-name"
    ```
-5. **Open a Pull Request**
+4. Push to the branch:
+   ```bash
+   git push origin feature-name
+   ```
+5. Open a pull request.
 
-## 📝 License
+---
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+## License
 
-
-
-
+This project is licensed under the MIT License.

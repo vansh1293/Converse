@@ -1,7 +1,8 @@
 import { Routes, Route, Navigate,useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { checkAuth, connectSocket } from "./redux/slice/authSlice";
+import { checkAuth, connectSocket, setEncryption } from "./redux/slice/authSlice";
+import { createDB } from "./lib/crypto";
 import { ProgressDemo } from "./components/Demo/ProgressDemo";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -20,13 +21,27 @@ export default function App() {
   const dispatch = useDispatch();
   const { authUser, isCheckingUser,onlineUsers } = useSelector((state) => state.auth);
 
+  // Initialize IndexedDB once
   useEffect(() => {
-    if(!isCheckingUser)
-    dispatch(checkAuth(navigate));  
-  setTimeout(() => {
-    dispatch(connectSocket(navigate));
-  }, 3000);
+    createDB();
+  }, []);
+
+  // Check authentication when app starts
+  useEffect((navigate) => {
+    dispatch(checkAuth(navigate));
   }, [dispatch]);
+
+  // After authUser is available → setup encryption → connect socket
+  useEffect((navigate) => {
+    if (!authUser) return;
+
+    const initSecurity = async (authUser,navigate) => {
+      await dispatch(setEncryption(authUser.id));
+      dispatch(connectSocket(navigate));
+    };
+
+    initSecurity(authUser,navigate);
+  }, [authUser, dispatch]);
 
 
 
@@ -46,7 +61,7 @@ export default function App() {
           background="#000000"
           minSize={0.1}
           maxSize={0.7}
-          particleDensity={70}
+          particleDensity={80}
           className="w-full h-full"
           particleColor="#FFFFFF"
         />
@@ -57,7 +72,7 @@ export default function App() {
         colorStops={["#00d8ff", "#7cff67", "#00d8ff"]}
         blend={1}
         amplitude={2}
-        speed={0.3}
+        speed={0.5}
       />
                 
       </div>

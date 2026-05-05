@@ -1,0 +1,55 @@
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  fullName        String
+  password        String
+  profileImage    String    @default("")
+  about           String    @default("")
+  isEmailVerified Boolean   @default(false)
+  emailOTP        String?
+  emailOTPExpires DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  devices   Device[]
+}
+
+model Message {
+  id String @id @default(uuid())
+
+  senderDeviceId   String
+  receiverDeviceId String
+
+  senderDevice   Device @relation("DeviceSentMessages", fields: [senderDeviceId], references: [id])
+  receiverDevice Device @relation("DeviceReceivedMessages", fields: [receiverDeviceId], references: [id])
+
+  ciphertext String
+  nonce      String
+
+  createdAt DateTime @default(now())
+}
+
+model Device {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  publicKey String
+
+  device    String
+  createdAt DateTime @default(now())
+
+  sentMessages     Message[] @relation("DeviceSentMessages")
+  receivedMessages Message[] @relation("DeviceReceivedMessages")
+}

@@ -16,7 +16,7 @@ export default defineConfig({
     },
   },  
   optimizeDeps: {
-    include: ["@shadcn/ui","simple-peer"], // Optimizes ShadCN components
+    include: ["@shadcn/ui"], // Optimizes ShadCN components
   },
 });
   

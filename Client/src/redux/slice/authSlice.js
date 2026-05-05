@@ -10,8 +10,14 @@ import {
   setCallRejected,
   setOutgoingCall,
   setCallerID,
-  setAnswerOffer
+  setAnswerOffer,
 } from "./callSlice";
+import {
+  createDB,
+  writeKeysToDB,
+  getKeysFromDB,
+  generateKeyPair,
+} from "../../lib/crypto";
 
 const initialState = {
   authUser: null,
@@ -23,21 +29,26 @@ const initialState = {
   socket: null,
   onlineUsers: [],
   message: null,
+  private_key: null,
+  public_key: null,
+  deviceID: null,
+  isSettingEncryption: false,
 };
 
 export const checkAuth = createAsyncThunk(
   "auth/checkAuth",
-  async (_,{ rejectWithValue}) => {
+  async (_, { rejectWithValue }) => {
     try {
       const res = await axiosInstance.get("/auth/check");
+
       return { authUser: res.data };
     } catch (err) {
       console.error("Error in checkAuth:", err?.response?.data || err.message);
       return rejectWithValue(
-        err?.response?.data || { message: "Unauthorized access" }
+        err?.response?.data || { message: "Unauthorized access" },
       );
     }
-  }
+  },
 );
 
 export const updateProfile = createAsyncThunk(
@@ -60,10 +71,10 @@ export const updateProfile = createAsyncThunk(
         description: err.response.data.message,
       });
       return rejectWithValue(
-        err.response?.data || { message: "An error occurred" }
+        err.response?.data || { message: "An error occurred" },
       );
     }
-  }
+  },
 );
 
 export const signup = createAsyncThunk(
@@ -89,8 +100,56 @@ export const signup = createAsyncThunk(
         response: err.response?.data || null,
       });
     }
-  }
+  },
 );
+
+export const setEncryption = createAsyncThunk(
+  "auth/setEncryption",
+  async (id, { rejectWithValue }) => {
+    try {
+      // 1. Check if keys already exist
+      const storedKeys = await getKeysFromDB(id);
+
+      if (storedKeys) {
+        return {
+          privateKey: storedKeys.privateKey,
+          publicKey: storedKeys.publicKey,
+          deviceID: storedKeys.deviceID,
+          reused: true,
+        };
+      }
+
+      // 2. Generate new keys
+      const keyPair = generateKeyPair();
+
+      // 3. Send public key to server
+      const res = await axiosInstance.post("/auth/store-public-key", {
+        publicKey: keyPair.publicKey,
+        device: navigator.userAgent,
+      });
+
+      const deviceID = res.data.deviceID;
+
+      // 4. Store keys locally
+      await writeKeysToDB(id, keyPair.privateKey, keyPair.publicKey, deviceID);
+
+      return {
+        privateKey: keyPair.privateKey,
+        publicKey: keyPair.publicKey,
+        deviceID,
+        reused: false,
+      };
+    } catch (err) {
+      console.error("Error in setEncryption:", err);
+
+      return rejectWithValue({
+        message: "Failed to set up encryption",
+        error: err?.response?.data || err.message,
+      });
+    }
+  },
+);
+
 
 export const verifyOTP = createAsyncThunk(
   "auth/verifyOTP",
@@ -100,8 +159,9 @@ export const verifyOTP = createAsyncThunk(
       const authUser = res.data;
 
       // Dispatch connectSocket after successful login
-      dispatch(setAuthUser(authUser)); // Set the user in state immediately
-      dispatch(connectSocket());
+      await dispatch(setAuthUser(authUser)); // Set the user in state immediately
+      await dispatch(setEncryption(authUser.id));
+      await dispatch(connectSocket());
       toast({
         title: "verification successful",
         description: "You are now logged in.",
@@ -116,10 +176,10 @@ export const verifyOTP = createAsyncThunk(
         description: err.response.data.message,
       });
       return rejectWithValue(
-        err?.response?.data || { message: "An error occurred" }
+        err?.response?.data || { message: "An error occurred" },
       );
     }
-  }
+  },
 );
 
 export const login = createAsyncThunk(
@@ -130,8 +190,9 @@ export const login = createAsyncThunk(
       const authUser = res.data;
 
       // Dispatch connectSocket after successful login
-      dispatch(setAuthUser(authUser)); // Set the user in state immediately
-      dispatch(connectSocket());
+      await dispatch(setAuthUser(authUser)); // Set the user in state immediately
+      await dispatch(setEncryption(authUser.id));
+      await dispatch(connectSocket());
       toast({
         title: "Login successful",
         description: "You are now logged in.",
@@ -146,10 +207,10 @@ export const login = createAsyncThunk(
         description: err.response.data.message,
       });
       return rejectWithValue(
-        err?.response?.data || { message: "Login failed" }
+        err?.response?.data || { message: "Login failed" },
       );
     }
-  }
+  },
 );
 
 export const logout = createAsyncThunk(
@@ -163,15 +224,23 @@ export const logout = createAsyncThunk(
       console.error("Error in logout:", err);
       return rejectWithValue(err);
     }
-  }
+  },
 );
 export const connectSocket = (navigate) => (dispatch, getState) => {
   const { auth } = getState();
   if (auth.authUser && !auth.socket) {
-    const socket = io(import.meta.env.VITE_AXIOS_BASE_URL, {
+    console.log("Connecting socket...");
+
+    const socket = io(import.meta.env.VITE_SOCKET_URL, {
       query: {
-        userID: auth.authUser._id,
-      },
+        userID: auth.authUser.id,
+      }, //have to change userid to deviceid for better security
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      transports: ["websocket"],
+      withCredentials: true,
     });
     socket.on("connect", () => {
       console.log("✅ Socket connected successfully.");
@@ -205,7 +274,7 @@ export const connectSocket = (navigate) => (dispatch, getState) => {
     socket.on("error", (err) => {
       console.error("Socket error:", err);
     });
-   
+
     dispatch(setSocket({ socket }));
     socket.on("disconnect", () => {
       console.log("❌ Socket disconnected.");
@@ -242,6 +311,13 @@ export const authSlice = createSlice({
       })
       .addCase(checkAuth.fulfilled, (state, action) => {
         state.authUser = action.payload.authUser;
+        action.payload.private_key
+          ? (state.private_key = action.payload.private_key)
+          : null;
+        action.payload.deviceID
+          ? (state.deviceID = action.payload.deviceID)
+          : null;
+
         state.isCheckingUser = false;
       })
       .addCase(checkAuth.rejected, (state, action) => {
@@ -287,6 +363,9 @@ export const authSlice = createSlice({
       .addCase(logout.fulfilled, (state) => {
         state.authUser = null;
         state.socket = null;
+        state.deviceID = null;
+        state.private_key = null;
+        state.public_key = null;
       })
       .addCase(verifyOTP.fulfilled, (state, action) => {
         if (!state.authUser) {
@@ -299,6 +378,20 @@ export const authSlice = createSlice({
       })
       .addCase(logout.rejected, (state, action) => {
         state.error = action.payload;
+      })
+      .addCase(setEncryption.fulfilled, (state, action) => {
+        state.private_key = action.payload.privateKey;
+        state.public_key = action.payload.publicKey;
+        state.deviceID = action.payload.deviceID;
+        state.isSettingEncryption = false;
+      })
+      .addCase(setEncryption.rejected, (state, action) => {
+        state.error = action.payload;
+        state.isSettingEncryption = false;
+      })
+      .addCase(setEncryption.pending, (state) => {
+        // You can set a loading state here if needed
+        state.isSettingEncryption = true;
       });
   },
 });
