@@ -153,7 +153,7 @@ export const sendMessage = createAsyncThunk(
             id: res.data.id || Date.now().toString(),
             text: data.text,
             senderDeviceId: authState.deviceID,
-            receiverDeviceId: state.chat.publicKeys[0]?.id || "", // placeholder for optimistic UI
+            receiverDeviceId: state.publicKeys[0]?.id || "", // placeholder for optimistic UI
             senderID: authState.authUser.id,
             createdAt: new Date().toISOString(),
           },
@@ -223,11 +223,39 @@ export const subscribeToMessages = () => (dispatch, getState) => {
     return;
   }
 
-  auth.socket.on("message", (data) => {
-    if (data.senderID !== chat.selectedUser) return;
-    const currentMessages = getState().chat.messages;
-    dispatch(setMessages([...currentMessages, data]));
-    console.log("Subscribed to messages", chat.selectedUser);
+  auth.socket.on("message", (payload) => {
+    const { senderID, encryptedMessages } = payload;
+    if (senderID !== chat.selectedUser) return;
+
+    const myEncryptedMessage = encryptedMessages.find(m => m.receiverDevice === auth.deviceID);
+    if (!myEncryptedMessage) return;
+
+    const theirPublicKeyObj = chat.publicKeys.find(key => key.id === myEncryptedMessage.senderDevice);
+    if (!theirPublicKeyObj) return;
+
+    try {
+      const decrypted = decryptMessage(
+        myEncryptedMessage.ciphertext,
+        myEncryptedMessage.nonce,
+        theirPublicKeyObj.publicKey,
+        auth.private_key
+      );
+
+      const newMessage = {
+        id: Date.now().toString(),
+        text: decrypted,
+        senderDeviceId: myEncryptedMessage.senderDevice,
+        receiverDeviceId: myEncryptedMessage.receiverDevice,
+        senderID: senderID,
+        createdAt: new Date().toISOString(),
+      };
+
+      const currentMessages = getState().chat.messages;
+      dispatch(setMessages([...currentMessages, newMessage]));
+      console.log("Received new message from", chat.selectedUser);
+    } catch (err) {
+      console.warn("Failed to decrypt incoming socket message:", err.message);
+    }
   });
   auth.socket.on("messageDeleted", (data) => {
     const currentMessages = getState().chat.messages;

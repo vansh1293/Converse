@@ -89,7 +89,10 @@ export const sendMessage = async (req, res) => {
 
     const receiverSocketID = getReceiverSocketID(receiverID);
     if (receiverSocketID) {
-      io.to(receiverSocketID).emit("message", arr);
+      io.to(receiverSocketID).emit("message", {
+        senderID: senderID,
+        encryptedMessages: arr,
+      });
     }
 
     res.status(201).json({ message: "Message sent successfully" });
