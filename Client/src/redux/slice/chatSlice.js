@@ -58,6 +58,7 @@ export const getMessages = createAsyncThunk(
       );
 
       let messages = [];
+      const seenSentMessages = new Set();
       for (const message of res.data) {
         let i_am_sender = message.senderDeviceId === myDeviceId;
 
@@ -80,6 +81,13 @@ export const getMessages = createAsyncThunk(
         } catch (err) {
           console.warn("Failed to decrypt a message:", err.message);
           decrypted = "This message could not be decrypted.";
+        }
+
+        // Deduplicate outgoing messages sent to multiple devices
+        if (i_am_sender) {
+          const uniqueKey = `${message.createdAt}-${decrypted}`;
+          if (seenSentMessages.has(uniqueKey)) continue;
+          seenSentMessages.add(uniqueKey);
         }
 
         messages.push({
